@@ -1,19 +1,31 @@
 import mongoose from "mongoose";
 
-async function dbConnect() {
-    try {
-        if(mongoose.connection.readyState >=1){
-            console.log("Db Is Already Connected");
-            return;
-        }
-        const db = await mongoose.connect(process.env.MONGODB_URI)
-        console.log(
-            `\n MongoDB connected !! DB HOST: ${db.connection.host}`
-          );
-    } catch(error) {
-        console.log("MONGODB connection FAILED",error);
-        process.exit(1)
-    }
+const MONGO_URI = process.env.MONGODB_URI;
+
+if (!MONGO_URI) {
+  throw new Error("Please define the MONGODB_URI environment variable");
 }
 
-export default dbConnect
+let cached = global.mongoose || { conn: null, promise: null };
+
+async function dbConnect() {
+  if (cached.conn) {
+    console.log("Using existing database connection");
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }).then((mongoose) => mongoose);
+  }
+
+  cached.conn = await cached.promise;
+  global.mongoose = cached;
+
+  console.log("New MongoDB connection established");
+  return cached.conn;
+}
+
+export default dbConnect;

@@ -16,8 +16,10 @@ const Page = () => {
   // Function to fetch messages from the API
   const fetchMessages = async () => {
     try {
-      const response = await axios.get('/api/get_message'); // Correct endpoint for fetching messages
-      setMessages(response.data); // Set the messages state with the fetched data
+      const response = await axios.get('/api/get_message', {
+        headers: { "Cache-Control": "no-cache" } // Prevent caching
+      });
+      setMessages(response.data); // Update state with latest messages
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -26,24 +28,24 @@ const Page = () => {
   // Function to delete a message
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`/api/delete_message/${id}`); // Call API to delete the message
+      await axios.delete(`/api/delete_message/${id}`);
       fetchMessages(); // Refetch messages after deletion
     } catch (error) {
       console.error('Error deleting message:', error);
     }
   };
 
-  // useEffect to run fetchMessages when the page loads and when the user is authenticated
+  // Fetch messages when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchMessages(); // Fetch messages if the user is authenticated
+      fetchMessages();
     }
-  }, [isAuthenticated]); // Runs when authentication status changes
+  }, [isAuthenticated]);
 
   return (
     <>
       {!isAuthenticated ? (
-        <Auth onSuccess={handleAuthSuccess} /> // Show authentication component if not authenticated
+        <Auth onSuccess={handleAuthSuccess} />
       ) : (
         <>
           <NavbarDemo />
@@ -55,6 +57,13 @@ const Page = () => {
                   This is a list of all messages. You can view and manage messages here.
                 </p>
               </div>
+              {/* Refresh Button */}
+              <button
+                onClick={fetchMessages}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              >
+                Refresh Messages
+              </button>
             </div>
             <div className="mt-6 flex flex-col">
               <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -63,28 +72,10 @@ const Page = () => {
                     <table className="min-w-full divide-y divide-zinc-800">
                       <thead className="bg-transparent">
                         <tr>
-                          <th
-                            scope="col"
-                            className="px-4 py-3.5 text-left text-sm font-normal text-slate-300"
-                          >
-                            <span>Id</span>
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-12 py-3.5 text-left text-sm font-normal text-slate-300"
-                          >
-                            Message
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-4 py-3.5 text-left text-sm font-normal text-slate-300"
-                          >
-                            Date
-                          </th>
-                          <th
-                            scope="col"
-                            className="relative px-4 py-3.5"
-                          >
+                          <th className="px-4 py-3.5 text-left text-sm font-normal text-slate-300">Id</th>
+                          <th className="px-12 py-3.5 text-left text-sm font-normal text-slate-300">Message</th>
+                          <th className="px-4 py-3.5 text-left text-sm font-normal text-slate-300">Date</th>
+                          <th className="relative px-4 py-3.5">
                             <span className="sr-only">Delete</span>
                           </th>
                         </tr>
@@ -92,20 +83,14 @@ const Page = () => {
                       <tbody className="divide-y divide-zinc-800 bg-transparent">
                         {messages.map((message) => (
                           <tr key={message._id}>
-                            <td className="whitespace-nowrap px-4 py-4">
-                              <div className="text-sm font-medium text-slate-300">
-                                {message._id}
-                              </div>
+                            <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-300">
+                              {message._id}
                             </td>
-                            <td className="whitespace-nowrap px-12 py-4">
-                              <div className="text-sm text-slate-300">
-                                {message.message}
-                              </div>
+                            <td className="whitespace-nowrap px-12 py-4 text-sm text-slate-300">
+                              {message.message}
                             </td>
-                            <td className="whitespace-nowrap px-4 py-4">
-                              <div className="text-sm text-slate-300">
-                                {new Date(message.createdAt).toLocaleDateString()}
-                              </div>
+                            <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-300">
+                              {new Date(message.createdAt).toLocaleDateString()}
                             </td>
                             <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-medium">
                               <button
